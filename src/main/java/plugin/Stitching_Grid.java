@@ -97,6 +97,7 @@ public class Stitching_Grid implements PlugIn
 	public static String defaultTileConfiguration = "TileConfiguration.txt";
 	public static boolean defaultAddTilesAsRois = false;
 	public static boolean defaultComputeOverlap = true;
+	public static boolean defaultNormalize = false;
 	public static boolean defaultInvertX = false;
 	public static boolean defaultInvertY = false;
 	public static boolean defaultIgnoreZStage = false;
@@ -211,7 +212,8 @@ public class Stitching_Grid implements PlugIn
 			gd.addCheckbox( "Ignore_Calibration", defaultIgnoreCalibration );
 			gd.addSlider( "Increase_overlap [%]", 0, 100, defaultIncreaseOverlap );
 		}
-		
+
+		gd.addCheckbox( "Normalize FOV per channel", defaultNormalize );
 		gd.addCheckbox( "Invert_X coordinates", defaultInvertX );
 		gd.addCheckbox( "Invert_Y coordinates", defaultInvertY );
 		gd.addCheckbox( "Ignore_Z_stage position", defaultIgnoreZStage);
@@ -339,7 +341,8 @@ public class Stitching_Grid implements PlugIn
 			ignoreCalibration = false;
 			increaseOverlap = 0;
 		}
-		
+
+		params.normalizeFOV = defaultNormalize = gd.getNextBoolean();
 		final boolean invertX = params.invertX = defaultInvertX = gd.getNextBoolean();
 		final boolean invertY = params.invertY = defaultInvertY = gd.getNextBoolean();
 		final boolean ignoreZStage = params.ignoreZStage = defaultIgnoreZStage = gd.getNextBoolean();

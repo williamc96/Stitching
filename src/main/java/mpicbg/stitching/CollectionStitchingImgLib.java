@@ -23,9 +23,14 @@ package mpicbg.stitching;
 
 import ij.IJ;
 import ij.gui.Roi;
-
-import java.awt.Rectangle;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ImageProcessor;
+import java.util.Collections;
+import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.awt.Rectangle;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,8 +43,113 @@ import mpicbg.models.TranslationModel3D;
 public class CollectionStitchingImgLib 
 {
 
+	public static void normalizeIntensity(ArrayList<ImageCollectionElement> elements, final StitchingParameters params) {
+
+		int numChannels = elements.get(0).open(false).getNChannels(); // Example to get number of channels
+        int numFOVs = elements.get(0).open(false).getNSlices(); // Assuming the number of slices represents FOVs per channel
+        
+        if (elements.isEmpty()) return;
+        
+        final AtomicInteger ai = new AtomicInteger(0);
+		
+		final int numThreads;
+		
+		if ( params.cpuMemChoice == 0 )
+			numThreads = 1;
+		else
+			numThreads = Runtime.getRuntime().availableProcessors();
+
+        // Assuming all images have the same dimensions
+        ImagePlus firstImage = elements.get(0).open(false);
+        final int width = firstImage.getWidth();
+        final int height = firstImage.getHeight();
+        int sliceCount = (numFOVs*numChannels) * elements.size();
+        // To store median images for each channel
+        ImagePlus[] medianImages = new ImagePlus[numChannels];
+		ImageProcessor[] slices = new ImageProcessor[sliceCount];
+		
+		for (int elementIndex = 0; elementIndex<elements.size();elementIndex++) {
+			ImageStack stack = elements.get(elementIndex).open(false).getStack();
+			for (int slice=0; slice<numFOVs*numChannels; slice++) {
+				slices[slice + elementIndex*numFOVs*numChannels] = stack.getProcessor(slice+1);
+			}
+		}
+		
+		final Thread[] threads = SimpleMultiThreading.newThreads( numThreads );
+		for ( int ithread = 0; ithread < threads.length; ++ithread ) {
+            threads[ ithread ] = new Thread(new Runnable()
+            {
+                @Override
+                public void run()
+                {		
+                   	final int myNumber = ai.getAndIncrement();
+			        for (int c = 0; c < numChannels; c++) {
+                    	if ( c % numThreads != myNumber ) {
+                    		continue;
+                    	}
+			        	
+			            float[] allPixels = new float[width * height];
+			            // Initialize an empty median image for this channel
+			            ImageProcessor medianProcessor = new ij.process.FloatProcessor(width, height);
+			            
+			            // Prepare an array to hold pixel values for the median calculation
+			            float[] pixelValues = new float[numFOVs* elements.size()];
+			
+			            for (int y = 0; y < height; y++) {
+			                for (int x = 0; x < width; x++) {
+			                    int index = 0;
+			                    for (int fov = 0; fov < sliceCount/numChannels; fov++) {
+			                        pixelValues[index++] = slices[c + fov*numChannels].getPixelValue(x, y);
+			                    }
+			                    // Calculate median for this pixel
+			                    float median = calculateMedian(pixelValues, index);
+			                    medianProcessor.putPixelValue(x, y, median);
+			                    allPixels[x+y*height] = median;
+			                }
+			            }
+			            float median = calculateMedian(allPixels,width * height);
+			
+			            for (int y = 0; y < height; y++) {
+			                for (int x = 0; x < width; x++) {
+			                	medianProcessor.putPixelValue(x, y, (float) medianProcessor.getPixelValue(x, y)/median);
+			                }
+			            }
+			
+			            // Create ImagePlus for the median image of the current channel
+			            medianImages[c] = new ImagePlus("Median Image - Channel " + (c + 1), medianProcessor);
+
+						ImageProcessor normIP = medianImages[c].getProcessor();
+			    		for (int y = 0; y < height; y++) {
+			                for (int x = 0; x < width; x++) {
+			                    for (int fov = 0; fov < sliceCount/numChannels; fov++) {
+			                    	int newVal = (int) ((float) slices[c + fov*numChannels].getPixelValue(x, y)/normIP.getPixelValue(x, y));
+			                        slices[c + fov*numChannels].putPixelValue(x, y, newVal);
+			                    }
+			                }
+			            }
+			        }
+                }
+            });
+		}
+		SimpleMultiThreading.startAndJoin( threads );
+		int b = 0;
+    }
+
+    // Helper function to calculate the median of a float array
+    private static float calculateMedian(float[] values, int length) {
+        Arrays.sort(values);
+        int middle = length / 2;
+        if (length % 2 == 0) // even number of elements
+            return (values[middle - 1] + values[middle]) / 2f;
+        else
+            return values[middle];
+    }
+	
 	public static ArrayList< ImagePlusTimePoint > stitchCollection( final ArrayList< ImageCollectionElement > elements, final StitchingParameters params )
 	{
+		if (params.normalizeFOV) 
+			normalizeIntensity(elements,params);
+		
 		// the result
 		final ArrayList< ImagePlusTimePoint > optimized;
 		

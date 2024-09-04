@@ -66,5 +66,8 @@ public class StitchingParameters
 	//added by John Lapage: allows storage of a sequential comparison range
 	public boolean sequential = false;
 	public int seqRange = 1;
+	
+	//added by Will Cunningham: allows normalization per channel (for illumination inhomogeneities)
+	public boolean normalizeFOV = false;
 
 }
