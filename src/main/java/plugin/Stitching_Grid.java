@@ -69,6 +69,7 @@ import ome.units.quantity.Length;
 import stitching.CommonFunctions;
 import stitching.utils.Log;
 import tools.RoiPicker;
+import ij.Prefs;
 
 /**
  * 
@@ -82,14 +83,13 @@ public class Stitching_Grid implements PlugIn
 	
 	public static boolean seperateOverlapY = false;
 	
-	public static int defaultGridChoice1 = 0;
-	public static int defaultGridChoice2 = 0;
+	public static int defaultGridChoice1 = (int) Prefs.get("stitching.defaultGridChoice1", 0);
+	public static int defaultGridChoice2 = (int) Prefs.get("stitching.defaultGridChoice2",0);
 
 	public static int defaultGridSizeX = 2, defaultGridSizeY = 3;
 	public static double defaultOverlapX = 20;
 	public static double defaultOverlapY = 20;
 	
-	public static String defaultDirectory = "";
 	public static String defaultSeriesFile = "";
 	public static boolean defaultConfirmFiles = true;
 	
@@ -97,10 +97,10 @@ public class Stitching_Grid implements PlugIn
 	public static String defaultTileConfiguration = "TileConfiguration.txt";
 	public static boolean defaultAddTilesAsRois = false;
 	public static boolean defaultComputeOverlap = true;
-	public static boolean defaultNormalize = false;
-	public static boolean defaultInvertX = false;
-	public static boolean defaultInvertY = false;
-	public static boolean defaultIgnoreZStage = false;
+	public static boolean defaultNormalize = Prefs.get("stitching.defaultNormalize",false);
+	public static boolean defaultInvertX = Prefs.get("stitching.defaultInvertX",false);
+	public static boolean defaultInvertY = Prefs.get("stitching.defaultInvertY",false);
+	public static boolean defaultIgnoreZStage = Prefs.get("stitching.defaultIgnoreZStage",false);
 	public static boolean defaultSubpixelAccuracy = false;
 	public static boolean defaultDownSample = false;
 	public static boolean defaultDisplayFusion = false;
@@ -179,7 +179,7 @@ public class Stitching_Grid implements PlugIn
 		}
 		else
 		{
-			gd.addDirectoryField( "Directory", defaultDirectory, 50 );
+			gd.addDirectoryField( "Directory", Prefs.get("stitching.defaultDirectory",""), 50 );
 		
 			// Modified by John Lapage: copying the general setup for Unknown Positions option 
 			if ( gridType == 5 || gridType == 7)
@@ -297,7 +297,8 @@ public class Stitching_Grid implements PlugIn
 		}
 		else
 		{
-			directory = defaultDirectory = gd.getNextString();
+			directory = gd.getNextString();
+			Prefs.set("stitching.defaultDirectory", directory);
 			seriesFile = null;
 				
 			// Modified by John Lapage: copying the general setup for Unknown Positions option 
@@ -343,9 +344,13 @@ public class Stitching_Grid implements PlugIn
 		}
 
 		params.normalizeFOV = defaultNormalize = gd.getNextBoolean();
+		Prefs.set("stitching.defaultNormalize",defaultNormalize);
 		final boolean invertX = params.invertX = defaultInvertX = gd.getNextBoolean();
+		Prefs.set("stitching.defaultInvertX",invertX);
 		final boolean invertY = params.invertY = defaultInvertY = gd.getNextBoolean();
+		Prefs.set("stitching.defaultInvertY",invertY);
 		final boolean ignoreZStage = params.ignoreZStage = defaultIgnoreZStage = gd.getNextBoolean();
+		Prefs.set("stitching.defaultIgnoreZStage",defaultIgnoreZStage);
 
 		params.subpixelAccuracy = defaultSubpixelAccuracy = gd.getNextBoolean();
 		final boolean downSample = params.downSample = defaultDownSample = gd.getNextBoolean();
@@ -674,6 +679,14 @@ public class Stitching_Grid implements PlugIn
 			if (params.outputVariant == 2) {
 				imp.setTitle("Fused" + "_" + seriesFile.substring(seriesFile.lastIndexOf(File.separator) + 1));
 				IJ.saveAs(imp, "Tiff", params.outputDirectory + "/" + imp.getTitle() + ".tif");
+				imp.changes = false;
+				if (imp.getWindow() != null) {
+			        imp.getWindow().close();
+			    }
+			    imp.flush();
+			    imp.close();
+			    imp = null;
+			    System.gc();
 			}
 		}
 		

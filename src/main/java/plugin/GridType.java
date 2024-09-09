@@ -24,6 +24,7 @@ package plugin;
 import static stitching.CommonFunctions.addHyperLinkListener;
 import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
+import ij.Prefs;
 import ij.gui.MultiLineLabel;
 
 import java.awt.Choice;
@@ -140,6 +141,7 @@ public class GridType
 			return;
 		
 		type = Stitching_Grid.defaultGridChoice1 = gd.getNextChoiceIndex();
+		Prefs.set("stitching.defaultGridChoice1", type);
 
 		if ( !IJ.macroRunning() )
 		{
@@ -159,6 +161,7 @@ public class GridType
 		}
 
 		Stitching_Grid.defaultGridChoice2 = order;
+		Prefs.set("stitching.defaultGridChoice2", Stitching_Grid.defaultGridChoice2);
 	}
 	
 	public int getType() { return type; }
