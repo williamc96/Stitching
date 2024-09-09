@@ -367,7 +367,7 @@ public class Stitching_Grid implements PlugIn
 		if ( params.fusionMethod != CommonFunctions.fusionMethodListGrid.length - 1 && (params.outputVariant == 1 ) || params.outputVariant == 2)
 		{
 			if ( defaultOutputDirectory == null || defaultOutputDirectory.length() == 0 )
-				defaultOutputDirectory = defaultDirectory;
+				defaultOutputDirectory = directory;
 			
 			final GenericDialogPlus gd2 = new GenericDialogPlus( "Select output directory" );
 			gd2.addDirectoryField( "Output_directory", defaultOutputDirectory, 60 );
@@ -639,7 +639,7 @@ public class Stitching_Grid implements PlugIn
 			Log.info( "Finished fusion (" + (System.currentTimeMillis() - time) + " ms)");
 			Log.info( "Finished ... (" + (System.currentTimeMillis() - startTime) + " ms)");
 			
-			if ( imp != null )
+			if ( imp != null  && (params.outputVariant != 2))
 			{
 				imp.setTitle( "Fused" );
 				imp.show();
