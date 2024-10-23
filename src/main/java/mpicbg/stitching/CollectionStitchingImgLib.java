@@ -23,6 +23,7 @@ package mpicbg.stitching;
 
 import ij.IJ;
 import ij.gui.Roi;
+import ij.plugin.filter.GaussianBlur;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ImageProcessor;
@@ -119,6 +120,10 @@ public class CollectionStitchingImgLib
 			            medianImages[c] = new ImagePlus("Median Image - Channel " + (c + 1), medianProcessor);
 
 						ImageProcessor normIP = medianImages[c].getProcessor();
+
+						GaussianBlur gaussianBlur = new GaussianBlur();
+						gaussianBlur.blurGaussian(normIP, 15.0, 15.0, 0.002);
+						
 			    		for (int y = 0; y < height; y++) {
 			                for (int x = 0; x < width; x++) {
 			                    for (int fov = 0; fov < sliceCount/numChannels; fov++) {
